@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+if [ -x $1/.perl_version ]; then
+  echo "Perl"
+  exit 0
+else
+  exit 1
+fi
+
+exit 0

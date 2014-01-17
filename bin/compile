@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+
+set -e
+set -o pipefail
+
+indent() {
+  sed -u 's/^/       /'
+}
+
+BUILD_DIR=$1
+CACHE_DIR=$2
+
+mkdir -p ${CACHE_DIR}
+
+rm -rf ${BUILD_DIR}/local
+if [ -d ${CACHE_DIR}/local ]; then
+	cp -a ${CACHE_DIR}/local ${BUILD_DIR}/local
+fi
+if [ -d ${CACHE_DIR}/.profile.d ]; then
+	cp -a ${CACHE_DIR}/.profile.d ${BUILD_DIR}/.profile.d
+fi
+
+test ! -d "${BUILD_DIR}/local" && mkdir -p "${BUILD_DIR}/local" || true
+test ! -d "${BUILD_DIR}/.profile.d" && mkdir -p ${BUILD_DIR}/.profile.d || true
+
+cd ${BUILD_DIR}
+
+if [ -e ${BUILD_DIR}/local/perlbrew.sh ]; then
+	source "${BUILD_DIR}/local/perlbrew.sh"
+	cp ${BUILD_DIR}/local/perlbrew.sh ${BUILD_DIR}/.profile.d/perlbrew.sh
+	
+fi
+
+if [ -e "${BUILD_DIR}/.perl_version" ]; then
+  PERL_VERSION=`cat ${BUILD_DIR}/.perl_version`
+else
+  PERL_VERSION="5.16.0"
+fi
+
+PATH="${BUILD_DIR}/local/bin:${PATH}"
+PERLBREW_URL="http://install.perlbrew.pl"
+PERLBREW_INSTALL_OPTIONS="-Duserelocatableinc -q -n --noman --switch"
+PERL_CPANM_OPT="--quiet --notest -l ${BUILD_DIR}/local"
+
+if ! [ -e ${PERLBREW_ROOT}/bin/perlbrew ]; then
+	export PERLBREW_ROOT=${BUILD_DIR}/local/perlbrew
+	echo "-----> Installing perlbrew"
+	curl -skL ${PERLBREW_URL} | bash > /dev/null
+	cp ${PERLBREW_ROOT}/etc/bashrc ${BUILD_DIR}/.profile.d/perlbrew.sh
+	source "${BUILD_DIR}/.profile.d/perlbrew.sh"
+	cp ${BUILD_DIR}/.profile.d/perlbrew.sh ${BUILD_DIR}/local/perlbrew.sh
+else
+	echo "-----> Found perlbrew installation at ${PERLBREW_ROOT}"
+fi
+
+echo "-----> Required perl: ${PERL_VERSION}"
+
+if ! [[ $(perlbrew list) == *perl-${PERL_VERSION}* ]]; then
+	echo "-----> Perl version ${PERL_VERSION} not found"
+	echo "-----> Installing perl: ${PERL_VERSION}"
+	perlbrew install ${PERL_VERSION} ${PERLBREW_INSTALL_OPTIONS}
+	perlbrew switch ${PERL_VERSION}
+else 
+	echo "-----> Found required perl: ${PERL_VERSION}"
+	perlbrew switch ${PERL_VERSION}
+fi
+
+# Another hack against perlbrew and cpanm
+echo "export PERL5LIB=${BUILD_DIR}/local/lib/perl5" >> ${BUILD_DIR}/.profile.d/perlbrew.sh
+echo "perlbrew use ${PERL_VERSION}" >> ${BUILD_DIR}/.profile.d/perlbrew.sh
+
+# TODO: Install cpanm permanently
+echo "-----> Bootstrapping cpanm"
+curl --silent https://raw.github.com/miyagawa/cpanminus/master/cpanm | perl - App::cpanminus 2>&1 | indent
+cpanm local::lib
+
+echo "-----> Installing dependencies"
+cpanm --installdeps ${PERL_CPANM_OPT} . 2>&1 | indent
+
+if [ -d ${BUILD_DIR}/local ]; then
+  rm -rf ${CACHE_DIR}/local
+  mkdir -p ${CACHE_DIR}
+  cp -a ${BUILD_DIR}/local ${CACHE_DIR}/local
+fi
+
+# Hack for perlbrew, dunno what to do with this:
+sed -i 's/\/build\/app/\/app/g' ${BUILD_DIR}/.profile.d/perlbrew.sh
+
