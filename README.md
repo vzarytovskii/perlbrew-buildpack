@@ -7,7 +7,7 @@ Tested only with Dokku's [buildstep](https://github.com/progrium/buildstep/)
 
 ## Step 1
 
-Write simple app:
+Write simple app, save it as myapp.pl:
 
 ```perl
 #!/usr/bin/env perl
@@ -38,7 +38,7 @@ Welcome to the Mojolicious real-time web framework!
 
 Create a 
 [cpanfile](http://search.cpan.org/~miyagawa/Module-CPANfile-1.0002/lib/cpanfile.pod)
-that lists dependencies instead:
+that lists dependencies:
 
 ```
 requires 'Mojolicious', '2.0';
@@ -55,13 +55,20 @@ BUILDPACK_URL=https://github.com/vzaritovsky/perlbrew-buildpack.git
 Create file called ```.perl_version``` with contents:
 
 ```sh
-5.18.1
+5.16.1
 ```
-where 5.18.1 is required perl version
+where ```5.16.1``` is required perl version
 
 ## Step 5
 
-Deploy using [dokku](Dokku(https://github.com/progrium/dokku/)
+Create file called ```Procfile``` with contents:
+```sh
+web: perl myapp.pl daemon -l http://*:$PORT
+```
+
+## Step 6
+
+Deploy using [dokku](https://github.com/progrium/dokku/)
 
 Watch:
 
@@ -93,3 +100,6 @@ Cloning into '/build/buildpacks/custom'...
 To dokku@yourhost.tld:perltest
    36b6b36..d990a8f  master -> master
 ```
+
+## Step 7
+Open http://perltest.yourhost.tld in your web browser.
