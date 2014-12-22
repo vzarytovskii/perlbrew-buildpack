@@ -71,7 +71,7 @@ echo "perlbrew use ${PERL_VERSION}" >> ${BUILD_DIR}/.profile.d/perlbrew.sh
 
 # TODO: Install cpanm permanently
 echo "-----> Bootstrapping cpanm"
-curl --silent https://raw.github.com/miyagawa/cpanminus/master/cpanm | perl - App::cpanminus 2>&1 | indent
+curl --silent -L https://raw.githubusercontent.com/miyagawa/cpanminus/master/cpanm | perl - App::cpanminus 2>&1 | indent
 cpanm local::lib
 
 echo "-----> Installing dependencies"
