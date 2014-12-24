@@ -7,6 +7,10 @@ indent() {
   sed -u 's/^/       /'
 }
 
+set-env() {
+  echo "export $1=$2" >> ${BUILD_DIR}/.profile.d/01-perlbrew-setup.sh
+}
+
 BUILD_DIR=$1
 CACHE_DIR=$2
 
@@ -65,8 +69,6 @@ else
 	perlbrew switch ${PERL_VERSION}
 fi
 
-# Another hack against perlbrew and cpanm
-echo "export PERL5LIB=${BUILD_DIR}/local/lib/perl5" >> ${BUILD_DIR}/.profile.d/perlbrew.sh
 echo "perlbrew use ${PERL_VERSION}" >> ${BUILD_DIR}/.profile.d/perlbrew.sh
 
 # TODO: Install cpanm permanently
@@ -83,6 +85,5 @@ if [ -d ${BUILD_DIR}/local ]; then
   cp -a ${BUILD_DIR}/local ${CACHE_DIR}/local
 fi
 
-# Hack for perlbrew, dunno what to do with this:
-sed -i 's/\/build\/app/\/app/g' ${BUILD_DIR}/.profile.d/perlbrew.sh
-
+set-env PERLBREW_ROOT /app/local/perlbrew
+set-env PERL5LIB /app/local/lib/perl5
