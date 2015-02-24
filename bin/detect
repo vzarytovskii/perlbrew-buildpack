@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-
-if [ -x $1/.perl_version ]; then
+if [[ -f $1/.perl_version || -f $1/Makefile.PL || -f $1/.cpanfile ]]; then
   echo "Perl"
   exit 0
 else
